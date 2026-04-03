@@ -39,16 +39,38 @@ const roomHandler = (io, socket) => {
     }
     socket.emit("room:full", { message: "Room is full" });
   });
-  
+
   socket.on("game:progress", (data) => {
-    socket.to(data.roomCode).emit("opponent:progress", { progress: data.progress, wpm: data.wpm });
+    socket
+      .to(data.roomCode)
+      .emit("opponent:progress", { progress: data.progress, wpm: data.wpm });
   });
   socket.on("game:finished", (roomCode) => {
     io.to(roomCode).emit("game:winner", socket.id);
   });
-  socket.on("game:rematch-request", (roomCode)=>{
-    socket.to(roomCode).emit("game:rematch-request")
-  }) 
+  socket.on("game:rematch-request", (roomCode) => {
+    socket.to(roomCode).emit("game:rematch-request");
+
+    const timeout = setTimeout(() => {
+      io.to(roomCode).emit("game:rematch-declined");
+    }, 30000);
+  });
+  socket.on("game:rematch-accepted", (roomCode) => {
+    let count = 3;
+    const countdown = setInterval(() => {
+      io.to(roomCode).emit("game:countdown", count);
+      count--;
+      if (count < 0) {
+        clearInterval(countdown);
+        io.to(roomCode).emit("game:start", {
+          text: "the quick brown fox jumps over the lazy dog",
+        });
+      }
+    }, 1000);
+  });
+  socket.on("game:rematch-declined", (roomCode) => {
+    io.to(roomCode).emit("game:rematch-declined");
+  });
 };
 
 module.exports = roomHandler;
