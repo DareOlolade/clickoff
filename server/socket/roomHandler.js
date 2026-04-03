@@ -1,10 +1,16 @@
-function generateRoomCode() {
+const typingTexts = require("../data/texts");
+
+const generateRoomCode = ()=>{
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
   for (let i = 0; i < 6; i++) {
     code += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return code;
+}
+
+const generateRandomText = (data)=>{
+  return data[Math.floor(Math.random() * data.length)]
 }
 
 const roomHandler = (io, socket) => {
@@ -31,7 +37,7 @@ const roomHandler = (io, socket) => {
         if (count < 0) {
           clearInterval(countdown);
           io.to(roomCode).emit("game:start", {
-            text: "the quick brown fox jumps over the lazy dog",
+            text: generateRandomText(typingTexts),
           });
         }
       }, 1000);
@@ -63,7 +69,7 @@ const roomHandler = (io, socket) => {
       if (count < 0) {
         clearInterval(countdown);
         io.to(roomCode).emit("game:start", {
-          text: "the quick brown fox jumps over the lazy dog",
+          text: generateRandomText(typingTexts),
         });
       }
     }, 1000);

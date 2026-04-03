@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #0a0a0f;
+  --color-cave: #1a1a2e;
+  --color-soul: #c49a6c;
+  --color-soul-dim: #7c6a52;
+  --color-border-dark: #2a2a4a;
+  
+  --font-cinzel: "Cinzel", serif;
+  --font-inter: "Inter", sans-serif;
+}
+
+body {
+  background-color: #0a0a0f;
+  color: #e8e8e8;
+  font-family: "Inter", "Cinzel", serif;
+}
