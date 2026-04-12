@@ -14,6 +14,8 @@ const generateRandomText = (data)=>{
 }
 
 const roomHandler = (io, socket) => {
+  let rematchTimeout = null
+
   socket.on("room:create", () => {
     const roomCode = generateRoomCode();
     socket.join(roomCode);
@@ -57,11 +59,15 @@ const roomHandler = (io, socket) => {
   socket.on("game:rematch-request", (roomCode) => {
     socket.to(roomCode).emit("game:rematch-request");
 
-    const timeout = setTimeout(() => {
+    rematchTimeout = setTimeout(() => {
+      console.log("timeout fired — declining rematch")
+
       io.to(roomCode).emit("game:rematch-declined");
     }, 30000);
   });
   socket.on("game:rematch-accepted", (roomCode) => {
+    console.log("rematch accepted, clearing timeout:", rematchTimeout)
+    clearTimeout(rematchTimeout)
     let count = 3;
     const countdown = setInterval(() => {
       io.to(roomCode).emit("game:countdown", count);
@@ -75,6 +81,7 @@ const roomHandler = (io, socket) => {
     }, 1000);
   });
   socket.on("game:rematch-declined", (roomCode) => {
+    clearTimeout(rematchTimeout)
     io.to(roomCode).emit("game:rematch-declined");
   });
 };

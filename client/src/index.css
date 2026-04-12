@@ -6,13 +6,34 @@
   --color-soul: #c49a6c;
   --color-soul-dim: #7c6a52;
   --color-border-dark: #2a2a4a;
-  
+
+  --color-monkey-bg: #323437;
+  --color-monkey-text: #646669;
+  --color-monkey-correct: #e2b714;
+  --color-monkey-wrong: #ca4754;
+  --color-monkey-cursor: #e2b714;
+
   --font-cinzel: "Cinzel", serif;
   --font-inter: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 body {
-  background-color: #0a0a0f;
+  background-color: #323437;
   color: #e8e8e8;
   font-family: "Inter", "Cinzel", serif;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.35s ease-out;
 }
