@@ -13,9 +13,9 @@ const GamePage = () => {
   const [opponentWpm, setOpponentWpm] = useState("");
   const [rematchRequested, setRematchRequested] = useState(false);
   const [rematchRecieved, setRematchRecieved] = useState(false);
-  
+
   const containerRef = useRef(null);
-  const cursorRef = useRef(null)
+  const cursorRef = useRef(null);
   const prevLineRef = useRef(0);
   const hasStartedTyping = useRef(false);
   const [charsPerLine, setCharsPerLine] = useState(75);
@@ -25,10 +25,6 @@ const GamePage = () => {
 
   const [currentText, setCurrentText] = useState(gameText || "");
   const [currentRoom, setCurrentRoom] = useState(roomCode || "");
-
-
-
-
 
   useEffect(() => {
     const calculateCharsPerLine = () => {
@@ -178,29 +174,29 @@ const GamePage = () => {
       setCurrentRoom(location.state.roomCode);
     }
   }, [location.state]);
-  
-useEffect(() => {
-  if (cursorRef.current && containerRef.current) {
-    const cursor = cursorRef.current;
-    const container = containerRef.current;
 
-    const lineHeight = 41.6; // 2.6rem * 16px
-    
-    // Get cursor position relative to the container
-    const cursorTop = cursor.offsetTop;
-    const currentScroll = container.scrollTop;
+  useEffect(() => {
+    if (cursorRef.current && containerRef.current) {
+      const cursor = cursorRef.current;
+      const container = containerRef.current;
 
-    // Calculate which line the cursor is on (0-indexed)
-    const currentLine = Math.floor(cursorTop / lineHeight);
+      const lineHeight = 41.6; // 2.6rem * 16px
 
-    // MonkeyType logic: keep cursor on line 1 (second visible line) after first line
-    if (currentLine > 0) {
-      container.scrollTop = cursorTop - lineHeight;
-    } else {
-      container.scrollTop = 0;
+      // Get cursor position relative to the container
+      const cursorTop = cursor.offsetTop;
+      const currentScroll = container.scrollTop;
+
+      // Calculate which line the cursor is on (0-indexed)
+      const currentLine = Math.floor(cursorTop / lineHeight);
+
+      // MonkeyType logic: keep cursor on line 1 (second visible line) after first line
+      if (currentLine > 0) {
+        container.scrollTop = cursorTop - lineHeight;
+      } else {
+        container.scrollTop = 0;
+      }
     }
-  }
-}, [typedText]); // Runs every time a character is typed
+  }, [typedText]);
   return (
     <div className="flex flex-col min-h-screen bg-monkey-bg text-white">
       {/* 🔝 TOP BAR */}
@@ -246,57 +242,57 @@ useEffect(() => {
       </div>
 
       {/* 🎮 GAME ZONE */}
-{/* 🎮 GAME ZONE */}
-<div className="flex flex-1 items-center justify-center px-16">
-  {/* The fixed-height viewport (shows 3 lines) */}
-  <div 
-    className="max-w-[900px] w-full relative overflow-hidden" 
-    style={{ height: "7.8rem" }} // 2.6rem * 3 lines
-  >
-    <div 
-  ref={containerRef}
-  className="font-mono text-2xl"
-  style={{
-    lineHeight: "2.6rem",
-    whiteSpace: "pre-wrap",
-    overflowWrap: "anywhere",
-    height: "100%",
-    overflowY: "scroll", // ✅ Allow scrolling
-    scrollbarWidth: "none", // Hide scrollbar (Firefox)
-    msOverflowStyle: "none", // Hide scrollbar (IE/Edge)
-  }}
->
-      {currentText.split("").map((char, index) => {
-        let className = "text-neutral-600"; // Default (monkey-text)
-        
-        if (index < typedText.length) {
-          className = typedText[index] === currentText[index]
-            ? "text-yellow-400" // Correct (monkey-correct)
-            : "text-red-500 bg-red-500/20"; // Wrong (monkey-wrong)
-        }
-
-        const isCursor = index === typedText.length;
-
-        return (
-          <span
-            key={index}
-            ref={isCursor ? cursorRef : null}
-            className={`${className} relative transition-colors duration-100`}
+      {/* 🎮 GAME ZONE */}
+      <div className="flex flex-1 items-center justify-center px-16">
+        <div
+          className="max-w-[900px] w-full relative"
+          style={{ height: "7.8rem" }}
+        >
+          <div
+            ref={containerRef}
+            className="font-mono text-2xl"
+            style={{
+              lineHeight: "2.6rem",
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              height: "100%",
+              overflowY: "scroll",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
           >
-            {isCursor && (
-              <span 
-                className="absolute left-0 top-0 h-full w-[2px] bg-yellow-400 animate-pulse" 
-                style={{ marginLeft: "-1px" }}
-              />
-            )}
-            {char}
-          </span>
-        );
-      })}
-    </div>
-  </div>
-</div>
-      {/* 🔻 BOTTOM HINT */}
+            {currentText.split("").map((char, index) => {
+              let className = "text-neutral-600";
+
+              if (index < typedText.length) {
+                className =
+                  typedText[index] === currentText[index]
+                    ? "text-yellow-400"
+                    : "text-red-500 bg-red-500/20";
+              }
+
+              const isCursor = index === typedText.length;
+
+              return (
+                <span
+                  key={index}
+                  ref={isCursor ? cursorRef : null}
+                  className={`${className} relative transition-colors duration-100`}
+                >
+                  {isCursor && (
+                    <span
+                      className="absolute left-0 top-0 h-full w-[2px] bg-yellow-400 animate-pulse"
+                      style={{ marginLeft: "-1px" }}
+                    />
+                  )}
+                  {char}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {/*  BOTTOM HINT */}
       <div className="text-center text-sm text-neutral-500 pb-6">
         start typing to begin · backspace to correct
       </div>
