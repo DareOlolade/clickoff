@@ -18,6 +18,7 @@ const HomePage = () => {
   };
 
   const joinRoom = () => {
+    if (!roomCode.trim()) return;
     roomCodeRef.current = roomCode;
     socket.emit("room:join", roomCode);
   };
@@ -63,78 +64,113 @@ const HomePage = () => {
       socket.off("game:countdown", handleCountdown);
       socket.off("game:start", handleGameStart);
     };
-  }, []);
+  }, [navigate]);
 
   return (
-    <div className="flex w-full justify-center items-center flex-col min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="font-cinzel text-5xl md:text-6xl font-bold tracking-[0.25em] text-soul">
+    <div className="flex flex-col min-h-screen bg-monkey-bg text-white">
+      {/* 🔝 TOP BAR */}
+      <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-800">
+        <h1 className="text-xl font-bold tracking-widest text-yellow-400">
           CLICKOFF
         </h1>
-        <p className="mt-4 text-sm tracking-[0.4em] opacity-80">
-          TYPE · FIGHT · DOMINATE
-        </p>
-        <div className="w-48 h-px bg-soul/30 mx-auto mt-8"></div>
+        <div className="flex gap-6 text-sm text-neutral-400 font-mono">
+          <span>1v1 typing battles</span>
+        </div>
       </div>
 
-      <div className="flex gap-5 w-full max-w-xl">
-        <div className="flex-1 bg-cave border border-border-dark rounded-xl p-7">
-          {/* Create Room panel */}
-          <p className="font-cinzel text-xs tracking-[0.3em] text-soul-dim uppercase">
-            Create Battle
-          </p>
-          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-            Start a new game. Share your code, wait for your opponent
-          </p>
-          <button
-            onClick={createRoom}
-            className="w-full bg-soul text-void font-cinzel text-sm font-bold tracking-widest py-3 rounded-md mt-4"
-          >
-            Enter the Arena
-          </button>
-          {inRoom && myRoomCode && (
-            <div className="mt-4 border border-soul/20 rounded-lg p-4 text-center">
-              <p className="font-cinzel text-xs tracking-[0.3em] text-soul-dim mb-2">
-                Your Battle Code
-              </p>
-              <p className="font-cinzel text-3xl font-bold tracking-[0.5em] text-soul">
-                {myRoomCode}
-              </p>
-              <p className="text-xs tracking-widest text-gray-600 mt-2">
-                Waiting for opponent...
+      {/* 🎮 MAIN CONTENT */}
+      <div className="flex flex-1 items-center justify-center px-8">
+        <div className="max-w-2xl w-full">
+          {/* Title Section */}
+          {!inRoom && (
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-neutral-300 mb-3">
+                ready to race?
+              </h2>
+              <p className="text-neutral-500 font-mono text-sm">
+                create a room or join with a code
               </p>
             </div>
           )}
-          {inRoom && countDown && (
-            <div className="mt-4 text-center">
-              <p className="font-cinzel text-6xl font-bold text-soul">
-                {countDown}
-              </p>
+
+          {/* Waiting / Countdown State */}
+          {inRoom && (
+            <div className="text-center mb-12">
+              {countDown ? (
+                <div className="animate-pulse">
+                  <div className="text-8xl font-bold text-yellow-400 mb-4">
+                    {countDown}
+                  </div>
+                  <p className="text-neutral-400 font-mono text-sm">
+                    get ready...
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="inline-block px-6 py-3 bg-neutral-800 rounded-lg mb-4">
+                    <p className="text-xs text-neutral-500 font-mono mb-1">
+                      ROOM CODE
+                    </p>
+                    <p className="text-3xl font-bold tracking-widest text-yellow-400 font-mono">
+                      {myRoomCode || roomCode}
+                    </p>
+                  </div>
+                  <p className="text-neutral-500 font-mono text-sm flex items-center justify-center gap-2">
+                    <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                    waiting for opponent...
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          {!inRoom && (
+            <div className="space-y-4">
+              {/* Create Room */}
+              <button
+                onClick={createRoom}
+                className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-5 rounded-lg transition-all font-mono tracking-wider"
+              >
+                CREATE ROOM
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-4 py-2">
+                <div className="flex-1 h-px bg-neutral-800"></div>
+                <span className="text-neutral-600 text-xs font-mono">OR</span>
+                <div className="flex-1 h-px bg-neutral-800"></div>
+              </div>
+
+              {/* Join Room */}
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && joinRoom()}
+                  placeholder="ENTER ROOM CODE"
+                  maxLength={6}
+                  className="w-full bg-neutral-900 border border-neutral-700 focus:border-yellow-400 text-yellow-400 font-mono text-center text-2xl tracking-widest py-4 rounded-lg outline-none transition-all placeholder:text-neutral-700"
+                />
+                <button
+                  onClick={joinRoom}
+                  disabled={!roomCode.trim()}
+                  className="w-full border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-bold py-5 rounded-lg transition-all font-mono tracking-wider disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-yellow-400"
+                >
+                  JOIN ROOM
+                </button>
+              </div>
             </div>
           )}
         </div>
-        <div className="flex-1 bg-cave border border-border-dark rounded-xl p-7">
-          {/* Join Room panel */}
-          <p className="font-cinzel text-xs tracking-[0.3em] text-soul-dim uppercase">
-            Join Battle
-          </p>
-          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-            Enter your opponent's code and step into the fight
-          </p>
-          <input
-            className="w-full bg-void border border-border-dark text-soul-dim font-cinzel tracking-widest uppercase text-sm px-4 py-3 rounded-md"
-            onChange={(e) => setRoomCode(e.target.value)}
-            value={roomCode}
-            placeholder="Enter battle code"
-          />
-          <button
-            onClick={joinRoom}
-            className="w-full border border-soul text-soul font-cinzel text-sm font-bold tracking-widest py-3 rounded-md mt-4"
-          >
-            Challenge
-          </button>
-          {inRoom && !myRoomCode && <p>waiting for opponent...</p>}
-        </div>
+      </div>
+
+      {/* 🔻 BOTTOM HINT */}
+      <div className="text-center text-sm text-neutral-500 pb-6 font-mono">
+        {inRoom
+          ? "share the code with your opponent"
+          : "create a room to get started · or join an existing one"}
       </div>
     </div>
   );
