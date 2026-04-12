@@ -37,7 +37,3 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.35s ease-out;
 }
-
-  div::-webkit-scrollbar {
-    display: none;
-  }
