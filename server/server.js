@@ -3,7 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const router = require("./routes/authRoutes");
-const roomHandler = require("./socket/roomHandler")
+const roomHandler = require("./socket/roomHandler");
 
 dotenv.config();
 
@@ -20,16 +20,21 @@ const io = new Server(server, {
 
 connectDB();
 const port = process.env.PORT || 5000;
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
-app.use(cors());
+app.use(
+  cors({
+    origin: CLIENT_URL,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use("/api/auth", router);
-
 
 io.on("connection", (socket) => {
   console.log("a user connected");
   roomHandler(io, socket);
-  
+
   socket.on("disconnect", () => {
     console.log("user disconnected");
   });
