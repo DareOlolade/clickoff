@@ -27,6 +27,8 @@ const GamePage = () => {
   const [rematchRecieved, setRematchRecieved] = useState(false);
   const [accuracy, setAccuracy] = useState(100);
   const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const lastLength = useRef(0);
 
   const containerRef = useRef(null);
   const cursorRef = useRef(null);
@@ -98,6 +100,7 @@ const GamePage = () => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (winner) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (startTime.current === null) {
         startTime.current = Date.now();
@@ -105,26 +108,19 @@ const GamePage = () => {
 
       if (e.key === "Backspace") {
         setTypedText((prev) => prev.slice(0, -1));
-        setCombo(0);
         return;
       }
 
       if (e.key.length === 1) {
-        setTypedText((prev) => {
-          const newText = prev + e.key;
-          if (e.key === currentText[prev.length]) {
-            setCombo((c) => c + 1);
-          } else {
-            setCombo(0);
-          }
-          return newText;
-        });
+        setTypedText((prev) =>
+          prev.length < currentText.length ? prev + e.key : prev,
+        );
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [winner, currentText]);
+  }, [winner, currentText]); // <-- no combo here anymore
 
   useEffect(() => {
     socket.on("opponent:progress", (data) => {
@@ -159,6 +155,8 @@ const GamePage = () => {
       setRematchRecieved(false);
       setAccuracy(100);
       setCombo(0);
+      setMaxCombo(0);
+      lastLength.current = 0;
       startTime.current = null;
     });
 
@@ -183,6 +181,25 @@ const GamePage = () => {
     const newProgress = Math.floor((correct / currentText.length) * 100);
     const newAccuracy = total > 0 ? Math.floor((correct / total) * 100) : 100;
     setAccuracy(newAccuracy);
+
+    const typedMore = typedText.length > lastLength.current;
+    const deleted = typedText.length < lastLength.current;
+
+    if (deleted) {
+      setCombo(0);
+    } else if (typedMore) {
+      const isPerfectStreak = correct === typedText.length; // no mistakes at all
+      if (isPerfectStreak && correct > 0) {
+        setCombo((c) => {
+          const next = c + 1;
+          setMaxCombo((m) => Math.max(m, next));
+          return next;
+        });
+      } else {
+        setCombo(0);
+      }
+    }
+    lastLength.current = typedText.length;
 
     if (startTime.current) {
       const elapsed = (Date.now() - startTime.current) / 1000 / 60;
@@ -310,7 +327,7 @@ const GamePage = () => {
                 COMBO
               </div>
               <div className="text-2xl font-bold text-yellow-400 tabular-nums leading-none">
-                {combo}
+                {maxCombo}
               </div>
             </div>
           </div>
@@ -323,8 +340,6 @@ const GamePage = () => {
           className="max-w-[900px] w-full relative"
           style={{ height: "7.8rem" }}
         >
-          
-
           <div
             ref={containerRef}
             className="font-mono text-2xl"
