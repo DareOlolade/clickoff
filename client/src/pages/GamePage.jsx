@@ -1,7 +1,7 @@
-import { useEffect } from "react";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import socket from "../socket/socket";
 import { useLocation, useNavigate } from "react-router-dom";
+import SaveStatsModal from "../components/SaveStatsModal"; // Fixed typo: SaveStateModel -> SaveStatsModal
 import {
   Trophy,
   Skull,
@@ -13,7 +13,9 @@ import {
   X,
   ChevronRight,
   Flame,
+  Clock,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const GamePage = () => {
   const [typedText, setTypedText] = useState("");
@@ -22,23 +24,26 @@ const GamePage = () => {
   const [winnerId, setWinnerId] = useState("");
   const startTime = useRef(null);
   const [wpm, setWpm] = useState(0);
-  const [opponentWpm, setOpponentWpm] = useState("");
+  const [opponentWpm, setOpponentWpm] = useState(0);
   const [rematchRequested, setRematchRequested] = useState(false);
   const [rematchRecieved, setRematchRecieved] = useState(false);
   const [accuracy, setAccuracy] = useState(100);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const lastLength = useRef(0);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [gameActive, setGameActive] = useState(false);
+  const [opponentCorrectChars, setOpponentCorrectChars] = useState(0);
+  const [showSaveStats, setShowSaveStats] = useState(false);
 
   const containerRef = useRef(null);
   const cursorRef = useRef(null);
-  const prevLineRef = useRef(0);
-  const hasStartedTyping = useRef(false);
-  const [charsPerLine, setCharsPerLine] = useState(75);
 
   const location = useLocation();
-  const { gameText, roomCode } = location.state || {};
+  const navigate = useNavigate();
+  const { isGuest } = useAuth();
 
+  const { gameText, roomCode } = location.state || {};
   const [currentText, setCurrentText] = useState(gameText || "");
   const [currentRoom, setCurrentRoom] = useState(roomCode || "");
 
@@ -47,7 +52,6 @@ const GamePage = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
         const charWidth = 14.4;
-        setCharsPerLine(Math.floor(containerWidth / charWidth));
       }
     };
 
@@ -56,7 +60,6 @@ const GamePage = () => {
     return () => window.removeEventListener("resize", calculateCharsPerLine);
   }, []);
 
-  const navigate = useNavigate();
   if (!currentText) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-monkey-bg text-white">
@@ -75,9 +78,11 @@ const GamePage = () => {
     setRematchRequested(true);
     socket.emit("game:rematch-request", currentRoom);
   };
+
   const acceptRematch = () => {
     socket.emit("game:rematch-accepted", currentRoom);
   };
+
   const declineRematch = () => {
     socket.emit("game:rematch-declined", currentRoom);
   };
@@ -99,7 +104,7 @@ const GamePage = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (winner) return;
+      if (winner || !gameActive) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (startTime.current === null) {
@@ -113,24 +118,37 @@ const GamePage = () => {
 
       if (e.key.length === 1) {
         setTypedText((prev) =>
-          prev.length < currentText.length ? prev + e.key : prev,
+          prev.length < currentText.length ? prev + e.key : prev
         );
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [winner, currentText]); // <-- no combo here anymore
+  }, [winner, currentText, gameActive]);
 
   useEffect(() => {
     socket.on("opponent:progress", (data) => {
       setOpponentProgress(data.progress);
       setOpponentWpm(data.wpm);
+      setOpponentCorrectChars(data.correctChars || 0);
     });
 
-    socket.on("game:winner", (id) => {
+    socket.on("game:winner", (data) => {
       setWinner(true);
-      setWinnerId(id);
+      setWinnerId(data.winnerId);
+      setGameActive(false);
+
+      // Show save stats modal for guests after 3 seconds
+      if (isGuest) {
+        setTimeout(() => {
+          setShowSaveStats(true);
+        }, 3000);
+      }
+    });
+
+    socket.on("game:timer", (time) => {
+      setTimeLeft(time);
     });
 
     socket.on("game:rematch-request", () => {
@@ -156,6 +174,10 @@ const GamePage = () => {
       setAccuracy(100);
       setCombo(0);
       setMaxCombo(0);
+      setTimeLeft(data.duration || 30);
+      setGameActive(true);
+      setOpponentCorrectChars(0);
+      setShowSaveStats(false);
       lastLength.current = 0;
       startTime.current = null;
     });
@@ -163,11 +185,12 @@ const GamePage = () => {
     return () => {
       socket.off("opponent:progress");
       socket.off("game:winner");
+      socket.off("game:timer");
       socket.off("game:rematch-request");
       socket.off("game:rematch-declined");
       socket.off("game:start");
     };
-  }, [currentRoom, navigate]);
+  }, [currentRoom, navigate, isGuest]);
 
   useEffect(() => {
     let correct = 0;
@@ -188,7 +211,7 @@ const GamePage = () => {
     if (deleted) {
       setCombo(0);
     } else if (typedMore) {
-      const isPerfectStreak = correct === typedText.length; // no mistakes at all
+      const isPerfectStreak = correct === typedText.length;
       if (isPerfectStreak && correct > 0) {
         setCombo((c) => {
           const next = c + 1;
@@ -201,7 +224,7 @@ const GamePage = () => {
     }
     lastLength.current = typedText.length;
 
-    if (startTime.current) {
+    if (startTime.current && gameActive) {
       const elapsed = (Date.now() - startTime.current) / 1000 / 60;
       const newWpm = elapsed > 0 ? Math.floor(correct / 5 / elapsed) : 0;
       setWpm(newWpm);
@@ -210,13 +233,10 @@ const GamePage = () => {
         roomCode: currentRoom,
         progress: newProgress,
         wpm: newWpm,
+        correctChars: correct,
       });
-
-      if (newProgress === 100) {
-        socket.emit("game:finished", currentRoom);
-      }
     }
-  }, [typedText, currentText, currentRoom]);
+  }, [typedText, currentText, currentRoom, gameActive]);
 
   useEffect(() => {
     if (location.state) {
@@ -249,6 +269,17 @@ const GamePage = () => {
           CLICKOFF
         </h1>
 
+        {/* Timer */}
+        <div className="flex items-center gap-3 px-6 py-3 bg-neutral-800/50 rounded-lg border border-neutral-700">
+          <Clock className={`w-5 h-5 ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`} />
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] text-neutral-500 leading-none">TIME</span>
+            <span className={`text-2xl font-bold tabular-nums leading-none ${timeLeft <= 5 ? 'text-red-400' : 'text-yellow-400'}`}>
+              {timeLeft}s
+            </span>
+          </div>
+        </div>
+
         {/* Progress Bars */}
         <div className="flex-1 mx-10 flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -259,8 +290,8 @@ const GamePage = () => {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs text-yellow-400 font-mono w-8 tabular-nums">
-              {progress}%
+            <span className="text-xs text-yellow-400 font-mono w-16 tabular-nums">
+              {correctLength} chars
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -271,8 +302,8 @@ const GamePage = () => {
                 style={{ width: `${opponentProgress}%` }}
               />
             </div>
-            <span className="text-xs text-red-400 font-mono w-8 tabular-nums">
-              {opponentProgress}%
+            <span className="text-xs text-red-400 font-mono w-16 tabular-nums">
+              {opponentCorrectChars} chars
             </span>
           </div>
         </div>
@@ -371,7 +402,7 @@ const GamePage = () => {
                   ref={isCursor ? cursorRef : null}
                   className={`${className} relative transition-all duration-100`}
                 >
-                  {isCursor && (
+                  {isCursor && gameActive && (
                     <span
                       className="absolute left-0 top-0 h-full w-[3px] bg-yellow-400 animate-pulse shadow-[0_0_10px_rgba(250,204,21,0.8)]"
                       style={{ marginLeft: "-1.5px" }}
@@ -385,16 +416,15 @@ const GamePage = () => {
         </div>
       </div>
 
-      {/*  BOTTOM HINT */}
+      {/* BOTTOM HINT */}
       <div className="text-center text-sm text-neutral-500 pb-6 font-mono">
-        start typing to begin · backspace to correct · esc to restart
+        {gameActive ? "type as much as you can in 30 seconds" : "waiting for game to start"}
       </div>
 
-      {/* Win Modal with Icons */}
+      {/* Win Modal */}
       {winnerId && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
           <div className="bg-gradient-to-b from-neutral-800 to-neutral-900 border-2 border-neutral-700 rounded-2xl p-12 text-center flex flex-col gap-6 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in duration-300">
-            {/* Icon instead of emoji */}
             <div className="flex justify-center mb-2">
               {winnerId === socket.id ? (
                 <div className="relative">
@@ -414,14 +444,14 @@ const GamePage = () => {
               {winnerId === socket.id ? (
                 <>
                   <Flame className="w-4 h-4 text-yellow-400" />
-                  You crushed it!
+                  You typed {correctLength} correct characters!
                 </>
               ) : (
-                "Better luck next time"
+                `You typed ${correctLength} correct characters`
               )}
             </p>
 
-            {/* Stats grid with icons */}
+            {/* Stats grid */}
             <div className="grid grid-cols-2 gap-3 text-sm font-mono">
               <div className="bg-neutral-800/50 rounded-lg p-3 border border-neutral-700">
                 <div className="flex items-center gap-1 justify-center mb-1">
@@ -463,7 +493,7 @@ const GamePage = () => {
               </div>
             </div>
 
-            {/* Rematch buttons with icons */}
+            {/* Rematch buttons */}
             {!rematchRequested && !rematchRecieved && (
               <button
                 onClick={requestRematch}
@@ -509,6 +539,15 @@ const GamePage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Save Stats Modal for Guests */}
+      {showSaveStats && (
+        <SaveStatsModal
+          wpm={wpm}
+          accuracy={accuracy}
+          onClose={() => setShowSaveStats(false)}
+        />
       )}
 
       <style>{`

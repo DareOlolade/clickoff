@@ -1,20 +1,20 @@
+// pages/HomePage.jsx
 import { useState, useEffect, useRef } from "react";
 import socket from "../socket/socket";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Loader2, Copy, Check } from "lucide-react";
+import { ChevronDown, Loader2, Copy, Check, User, LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const CATEGORIES = [
   { id: 'quotes', name: 'Quotes', desc: 'Inspirational quotes' },
   { id: 'code', name: 'Code', desc: 'Programming snippets' },
-  { id: 'words', name: 'Words', desc: 'Related words' },
-  { id: 'facts', name: 'facts', desc: 'science and history facts' },
+  { id: 'words', name: 'Words', desc: 'Random words' },
+  { id: 'facts', name: 'Facts', desc: 'Science and history facts' },
 ];
 
 const HomePage = () => {
   const [roomCode, setRoomCode] = useState("");
   const [countDown, setCountDown] = useState("");
-  const [gameText, setGameText] = useState("");
-  const [gameStarted, setGameStarted] = useState(false);
   const [myRoomCode, setMyRoomCode] = useState("");
   const [inRoom, setInRoom] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('quotes');
@@ -22,10 +22,14 @@ const HomePage = () => {
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  
   const roomCodeRef = useRef("");
   const dropdownRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const navigate = useNavigate();
+  const { user, isGuest, isAuthenticated, logout } = useAuth();
 
   const createRoom = () => {
     setIsCreatingRoom(true);
@@ -74,8 +78,6 @@ const HomePage = () => {
     };
 
     const handleGameStart = (data) => {
-      setGameText(data.text);
-      setGameStarted(true);
       navigate("/game", {
         state: { gameText: data.text, roomCode: roomCodeRef.current },
       });
@@ -98,11 +100,14 @@ const HomePage = () => {
     };
   }, [navigate]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
       }
     };
 
@@ -116,17 +121,95 @@ const HomePage = () => {
     <div className="flex flex-col min-h-screen bg-monkey-bg text-white">
       {/* 🔝 TOP BAR */}
       <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-800">
-        <h1 className="text-2xl font-bold tracking-widest text-yellow-400">
+        <h1 
+          className="text-2xl font-bold tracking-widest text-yellow-400 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
           CLICKOFF
         </h1>
-        <div className="flex gap-6 text-sm text-neutral-400 font-mono">
-          <span>1v1 typing battles</span>
+
+        <div className="flex items-center gap-6">
+          <span className="text-sm text-neutral-400 font-mono hidden md:block">
+            1v1 typing battles
+          </span>
+
+          {/* User Section */}
+          {isAuthenticated ? (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg hover:border-yellow-400 transition"
+              >
+                <User className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm font-mono text-neutral-200">
+                  {user?.username}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-neutral-800 border border-neutral-700 rounded-lg shadow-xl overflow-hidden z-50">
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate("/profile");
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-neutral-700 transition flex items-center gap-2 text-sm"
+                  >
+                    <User className="w-4 h-4 text-yellow-400" />
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-neutral-700 transition flex items-center gap-2 text-sm border-t border-neutral-700"
+                  >
+                    <LogOut className="w-4 h-4 text-red-400" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-2 text-sm font-mono text-yellow-400 hover:text-yellow-300 transition"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate("/register")}
+                className="px-4 py-2 text-sm font-mono bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition"
+              >
+                Register
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* 🎮 MAIN CONTENT */}
       <div className="flex flex-1 items-center justify-center px-8 py-12">
         <div className="max-w-md w-full">
+          {/* Guest Notice */}
+          {isGuest && !inRoom && (
+            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <p className="text-sm text-blue-400 text-center">
+                Playing as guest. <span className="font-bold">Stats won't be saved.</span>
+                <br />
+                <span 
+                  onClick={() => navigate("/register")}
+                  className="text-yellow-400 cursor-pointer hover:underline"
+                >
+                  Create an account
+                </span> to track your progress!
+              </p>
+            </div>
+          )}
+
           {/* Title Section */}
           {!inRoom && (
             <div className="text-center mb-10">
@@ -213,9 +296,8 @@ const HomePage = () => {
                   />
                 </button>
                 
-                {/* Dropdown Menu */}
                 {dropdownOpen && (
-                  <div className="absolute z-10 w-full max-w-md bg-neutral-800 border border-neutral-700 rounded-lg mt-1 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute z-10 w-full max-w-md bg-neutral-800 border border-neutral-700 rounded-lg mt-1 shadow-2xl overflow-hidden">
                     {CATEGORIES.map((category) => (
                       <button
                         key={category.id}
@@ -299,7 +381,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 🔻 BOTTOM HINT */}
+      {/*  BOTTOM HINT */}
       <div className="text-center text-xs text-neutral-600 pb-8 font-mono uppercase tracking-wider">
         {inRoom
           ? "Share the code with your opponent to start"
