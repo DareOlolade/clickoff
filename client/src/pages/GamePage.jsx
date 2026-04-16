@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import socket from "../socket/socket";
 import { useLocation, useNavigate } from "react-router-dom";
-import SaveStatsModal from "../components/SaveStatsModal"; // Fixed typo: SaveStateModel -> SaveStatsModal
+import SaveStatsModal from "../components/SaveStatsModal";
 import {
   Trophy,
   Skull,
@@ -32,7 +32,7 @@ const GamePage = () => {
   const [maxCombo, setMaxCombo] = useState(0);
   const lastLength = useRef(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [gameActive, setGameActive] = useState(false);
+  const [gameActive, setGameActive] = useState(true); // ✅ Set to true initially
   const [opponentCorrectChars, setOpponentCorrectChars] = useState(0);
   const [showSaveStats, setShowSaveStats] = useState(false);
 
@@ -46,6 +46,14 @@ const GamePage = () => {
   const { gameText, roomCode } = location.state || {};
   const [currentText, setCurrentText] = useState(gameText || "");
   const [currentRoom, setCurrentRoom] = useState(roomCode || "");
+
+  // ✅ Ensure game is active when component loads with game data
+  useEffect(() => {
+    if (currentText && currentRoom) {
+      setGameActive(true);
+      console.log("Game initialized and active");
+    }
+  }, [currentText, currentRoom]);
 
   useEffect(() => {
     const calculateCharsPerLine = () => {
@@ -104,11 +112,21 @@ const GamePage = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      console.log(
+        "Key pressed:",
+        e.key,
+        "gameActive:",
+        gameActive,
+        "winner:",
+        winner,
+      ); // ✅ Debug log
+
       if (winner || !gameActive) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (startTime.current === null) {
         startTime.current = Date.now();
+        console.log("Timer started"); // ✅ Debug log
       }
 
       if (e.key === "Backspace") {
@@ -118,7 +136,7 @@ const GamePage = () => {
 
       if (e.key.length === 1) {
         setTypedText((prev) =>
-          prev.length < currentText.length ? prev + e.key : prev
+          prev.length < currentText.length ? prev + e.key : prev,
         );
       }
     };
@@ -135,6 +153,7 @@ const GamePage = () => {
     });
 
     socket.on("game:winner", (data) => {
+      console.log("Game winner event received:", data); // ✅ Debug log
       setWinner(true);
       setWinnerId(data.winnerId);
       setGameActive(false);
@@ -148,6 +167,7 @@ const GamePage = () => {
     });
 
     socket.on("game:timer", (time) => {
+      console.log("Timer update:", time); // ✅ Debug log
       setTimeLeft(time);
     });
 
@@ -162,6 +182,7 @@ const GamePage = () => {
     });
 
     socket.on("game:start", (data) => {
+      console.log("Game start event received:", data); // ✅ Debug log
       setTypedText("");
       setOpponentProgress(0);
       setWpm(0);
@@ -271,10 +292,16 @@ const GamePage = () => {
 
         {/* Timer */}
         <div className="flex items-center gap-3 px-6 py-3 bg-neutral-800/50 rounded-lg border border-neutral-700">
-          <Clock className={`w-5 h-5 ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`} />
+          <Clock
+            className={`w-5 h-5 ${timeLeft <= 5 ? "text-red-400 animate-pulse" : "text-yellow-400"}`}
+          />
           <div className="flex flex-col items-center">
-            <span className="text-[10px] text-neutral-500 leading-none">TIME</span>
-            <span className={`text-2xl font-bold tabular-nums leading-none ${timeLeft <= 5 ? 'text-red-400' : 'text-yellow-400'}`}>
+            <span className="text-[10px] text-neutral-500 leading-none">
+              TIME
+            </span>
+            <span
+              className={`text-2xl font-bold tabular-nums leading-none ${timeLeft <= 5 ? "text-red-400" : "text-yellow-400"}`}
+            >
               {timeLeft}s
             </span>
           </div>
@@ -418,10 +445,12 @@ const GamePage = () => {
 
       {/* BOTTOM HINT */}
       <div className="text-center text-sm text-neutral-500 pb-6 font-mono">
-        {gameActive ? "type as much as you can in 30 seconds" : "waiting for game to start"}
+        {gameActive
+          ? "type as much as you can in 30 seconds"
+          : "waiting for game to start"}
       </div>
 
-      {/* Win Modal */}
+      {/* Win Modal - Rest of the code remains the same */}
       {winnerId && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
           <div className="bg-gradient-to-b from-neutral-800 to-neutral-900 border-2 border-neutral-700 rounded-2xl p-12 text-center flex flex-col gap-6 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in duration-300">
