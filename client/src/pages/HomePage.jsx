@@ -6,8 +6,8 @@ import { ChevronDown, Loader2, Copy, Check } from "lucide-react";
 const CATEGORIES = [
   { id: 'quotes', name: 'Quotes', desc: 'Inspirational quotes' },
   { id: 'code', name: 'Code', desc: 'Programming snippets' },
-  { id: 'words', name: 'Words', desc: 'Common words' },
-  { id: 'paragraphs', name: 'Paragraphs', desc: 'Longer texts' },
+  { id: 'words', name: 'Words', desc: 'Related words' },
+  { id: 'facts', name: 'facts', desc: 'science and history facts' },
 ];
 
 const HomePage = () => {
