@@ -9,19 +9,24 @@ const generateRoomCode = () => {
   return code;
 };
 
-const generateRandomText = (data) => {
-  return data[Math.floor(Math.random() * data.length)];
+const generateRandomText = (data, category) => {
+  const categoryTexts = data[category] || data["quotes"];
+  return categoryTexts[Math.floor(Math.random() * categoryTexts.length)];
 };
 
 // Store rematch timeouts per room
 const rematchTimeouts = new Map();
+const roomSettings = new Map();
 
 const roomHandler = (io, socket) => {
-  socket.on("room:create", () => {
+  socket.on("room:create", (category = "quotes") => {
     const roomCode = generateRoomCode();
     socket.join(roomCode);
-    socket.roomCode = roomCode; // Track user's room
-    console.log(`Room created: ${roomCode} by ${socket.id}`);
+    socket.roomCode = roomCode;
+    roomSettings.set(roomCode, { category });
+    console.log(
+      `Room created: ${roomCode} by ${socket.id} with category: ${category}`,
+    );
     socket.emit("room:created", roomCode);
   });
 
@@ -39,14 +44,14 @@ const roomHandler = (io, socket) => {
       return;
     }
 
-    // Join the room
     socket.join(roomCode);
-    socket.roomCode = roomCode; // Track user's room
+    socket.roomCode = roomCode;
     console.log(`User ${socket.id} joined room: ${roomCode}`);
 
     io.to(roomCode).emit("room:ready");
 
-    // Start countdown only when 2 players are present
+    const settings = roomSettings.get(roomCode) || { category: "quotes" };
+
     let count = 3;
     const countdown = setInterval(() => {
       io.to(roomCode).emit("game:countdown", count);
@@ -54,7 +59,7 @@ const roomHandler = (io, socket) => {
       if (count < 0) {
         clearInterval(countdown);
         io.to(roomCode).emit("game:start", {
-          text: generateRandomText(typingTexts),
+          text: generateRandomText(typingTexts, settings.category),
         });
       }
     }, 1000);
@@ -95,6 +100,8 @@ const roomHandler = (io, socket) => {
       rematchTimeouts.delete(roomCode);
     }
 
+    const settings = roomSettings.get(roomCode) || { category: "quotes" };
+
     let count = 3;
     const countdown = setInterval(() => {
       io.to(roomCode).emit("game:countdown", count);
@@ -102,7 +109,7 @@ const roomHandler = (io, socket) => {
       if (count < 0) {
         clearInterval(countdown);
         io.to(roomCode).emit("game:start", {
-          text: generateRandomText(typingTexts),
+          text: generateRandomText(typingTexts, settings.category),
         });
       }
     }, 1000);
@@ -127,10 +134,14 @@ const roomHandler = (io, socket) => {
 
       socket.to(roomCode).emit("opponent:disconnected");
 
-      // Clear any pending rematch timeout
       if (rematchTimeouts.has(roomCode)) {
         clearTimeout(rematchTimeouts.get(roomCode));
         rematchTimeouts.delete(roomCode);
+      }
+
+      const room = io.sockets.adapter.rooms.get(roomCode);
+      if (!room || room.size === 0) {
+        roomSettings.delete(roomCode);
       }
     }
   });

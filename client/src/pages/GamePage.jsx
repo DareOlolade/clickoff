@@ -327,7 +327,7 @@ const GamePage = () => {
                 COMBO
               </div>
               <div className="text-2xl font-bold text-yellow-400 tabular-nums leading-none">
-                {maxCombo}
+                {combo}
               </div>
             </div>
           </div>
@@ -458,7 +458,7 @@ const GamePage = () => {
                   <span className="text-xs text-neutral-500">MAX COMBO</span>
                 </div>
                 <div className="text-2xl font-bold text-purple-400 tabular-nums">
-                  {combo}
+                  {maxCombo}
                 </div>
               </div>
             </div>
