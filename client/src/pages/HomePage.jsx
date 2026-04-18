@@ -325,7 +325,7 @@ const HomePage = () => {
               <button
                 onClick={createRoom}
                 disabled={isCreatingRoom}
-                className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-yellow-400/50 text-black font-bold py-4 rounded-lg transition-all font-mono tracking-wider uppercase text-sm shadow-lg hover:shadow-yellow-400/20 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-yellow-400/50 text-black font-bold py-4 rounded-lg transition-all font-mono tracking-wider uppercase text-sm shadow-lg hover:shadow-yellow-400/20 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isCreatingRoom ? (
                   <>
@@ -364,7 +364,7 @@ const HomePage = () => {
                 <button
                   onClick={joinRoom}
                   disabled={!roomCode.trim() || isJoiningRoom}
-                  className="w-full border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-bold py-4 rounded-lg transition-all font-mono tracking-wider uppercase text-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-yellow-400 flex items-center justify-center gap-2"
+                  className="w-full border-2 border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-bold py-4 rounded-lg transition-all font-mono tracking-wider uppercase text-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-yellow-400 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isJoiningRoom ? (
                     <>
