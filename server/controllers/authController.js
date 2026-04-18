@@ -121,18 +121,68 @@ const loginUser = async (req, res) => {
   }
 };
 
-const getProfile = (req, res) => {
-  res.json({
-    user: {
-      id: req.user._id,
-      username: req.user.username,
-      email: req.user.email,
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-  });
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        stats: user.stats  
+      }
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const saveStats = async (req, res) => {
+  try {
+    const { wpm, accuracy, won } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update stats nested object
+    user.stats.racesPlayed = (user.stats.racesPlayed || 0) + 1;
+    
+    if (won) {
+      user.stats.racesWon = (user.stats.racesWon || 0) + 1;
+    }
+
+    // Update best WPM
+    if (wpm > (user.stats.bestWpm || 0)) {
+      user.stats.bestWpm = wpm;
+    }
+
+    // Update average WPM
+    const totalWpm = (user.stats.avgWpm || 0) * ((user.stats.racesPlayed || 1) - 1) + wpm;
+    user.stats.avgWpm = Math.round(totalWpm / user.stats.racesPlayed);
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Stats saved successfully",
+      stats: user.stats
+    });
+  } catch (error) {
+    console.error("Save stats error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 module.exports = {
   registerUser,
   loginUser,
   getProfile,
+  saveStats,
 };
