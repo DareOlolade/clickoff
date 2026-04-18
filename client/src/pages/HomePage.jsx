@@ -118,8 +118,8 @@ const HomePage = () => {
   const selectedCategoryData = CATEGORIES.find(cat => cat.id === selectedCategory);
 
   return (
-    <div className="flex flex-col min-h-screen bg-monkey-bg text-white">
-      {/* 🔝 TOP BAR */}
+    <div className="flex flex-col min-h-screen bg-monkey-bg text-white px-4 sm:px-8 md:px-16 lg:px-32 xl:px-52">
+      {/*  TOP BAR */}
       <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-800">
         <h1 
           className="text-2xl font-bold tracking-widest text-yellow-400 cursor-pointer"

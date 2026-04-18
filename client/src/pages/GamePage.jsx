@@ -309,13 +309,13 @@ const GamePage = () => {
         </div>
       )}
 
-      {/* 🎮 MAIN CONTENT - Constrained height */}
+      {/* 🎮 MAIN CONTENT  */}
 
       <div className="flex-1 flex items-center py-4 overflow-hidden">
         <div className="w-full flex flex-col gap-6 h-full max-h-[calc(100vh-120px)]">
-          {/* Timer and Stats Row - Same line with space-between */}
+          {/* Timer and Stats Row */}
           <div className="flex items-center justify-between shrink-0 flex-wrap gap-4 mb-8">
-            {/* Timer - Left side */}
+            {/* Timer  */}
             <div className="flex items-center gap-3 px-6 py-3 bg-neutral-800/50 rounded-xl border border-neutral-700">
               <Clock
                 className={`w-6 h-6 ${timeLeft <= 5 ? "text-red-400 animate-pulse" : "text-yellow-400"}`}
@@ -406,7 +406,7 @@ const GamePage = () => {
             </div>
           </div>
 
-          {/* Typing Area - DYNAMIC HEIGHT */}
+          {/* Typing Area */}
           <div className="relative bg-neutral-900/50 rounded-2xl p-8 md:p-10 border border-neutral-800 shadow-2xl flex-1 min-h-0">
             <div
               ref={containerRef}
