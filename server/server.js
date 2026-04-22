@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const router = require("./routes/authRoutes");
 const roomHandler = require("./socket/roomHandler");
+const leaderBoardRoutes = require("./routes/leaderBoardRoutes");
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(
 );
 app.use(express.json());
 app.use("/api/auth", router);
+app.use("/api/leaderboard", leaderBoardRoutes);
 
 io.on("connection", (socket) => {
   console.log("a user connected");

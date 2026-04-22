@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema(
       racesWon: { type: Number, default: 0 },
       avgWpm: { type: Number, default: 0 },
       bestWpm: { type: Number, default: 0 },
+      lastRaceAt:  { type: Date, default: null },
     },
   },
   { timestamps: true }
