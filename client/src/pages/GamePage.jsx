@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import socket from "../socket/socket";
 import { useLocation, useNavigate } from "react-router-dom";
 import SaveStatsModal from "../components/SaveStatsModal";
+import { BASE_URL } from "../config";
 import {
   Trophy,
   Skull,
@@ -35,7 +36,7 @@ const GamePage = () => {
   const [gameActive, setGameActive] = useState(true);
   const [opponentCorrectChars, setOpponentCorrectChars] = useState(0);
   const [showSaveStats, setShowSaveStats] = useState(false);
-   const [acceptingRematch, setAcceptingRematch] = useState(false);
+  const [acceptingRematch, setAcceptingRematch] = useState(false);
 
   const containerRef = useRef(null);
   const cursorRef = useRef(null);
@@ -51,22 +52,10 @@ const GamePage = () => {
   useEffect(() => {
     if (currentText && currentRoom) {
       setGameActive(true);
-      console.log("Game initialized and active");
+     
     }
   }, [currentText, currentRoom]);
 
-  useEffect(() => {
-    const calculateCharsPerLine = () => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const charWidth = 14.4;
-      }
-    };
-
-    calculateCharsPerLine();
-    window.addEventListener("resize", calculateCharsPerLine);
-    return () => window.removeEventListener("resize", calculateCharsPerLine);
-  }, []);
 
   if (!currentText) {
     return (
@@ -113,21 +102,14 @@ const GamePage = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      console.log(
-        "Key pressed:",
-        e.key,
-        "gameActive:",
-        gameActive,
-        "winner:",
-        winner,
-      );
+
 
       if (winner || !gameActive) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (startTime.current === null) {
         startTime.current = Date.now();
-        console.log("Timer started");
+        
       }
 
       if (e.key === "Backspace") {
@@ -159,6 +141,14 @@ const GamePage = () => {
       setWinnerId(data.winnerId);
       setGameActive(false);
 
+      // Save stats if user won
+      if (data.winnerId === socket.id && !isGuest) {
+        saveGameStats(wpm, accuracy, true);
+      } else if (!isGuest) {
+        // Save stats even if user lost
+        saveGameStats(wpm, accuracy, false);
+      }
+
       if (isGuest) {
         setTimeout(() => {
           setShowSaveStats(true);
@@ -167,7 +157,7 @@ const GamePage = () => {
     });
 
     socket.on("game:timer", (time) => {
-      console.log("Timer update:", time);
+   
       setTimeLeft(time);
     });
 
@@ -282,6 +272,37 @@ const GamePage = () => {
       }
     }
   }, [typedText]);
+
+  const saveGameStats = async (finalWpm, finalAccuracy, didWin) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+       
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/auth/save-stats`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          wpm: finalWpm,
+          accuracy: finalAccuracy,
+          won: didWin,
+        }),
+      });
+
+      if (response.ok) {
+   
+      } else {
+        console.error("Failed to save stats:", response.status);
+      }
+    } catch (error) {
+      console.error("❌ Error saving stats:", error);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-monkey-bg text-white px-4 sm:px-8 md:px-16 lg:px-32 xl:px-52">
